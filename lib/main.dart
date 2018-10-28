@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 void main() => runApp(MyApp());
 
@@ -8,9 +11,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.orange,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Photos'),
     );
   }
 }
@@ -25,13 +28,10 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  final _items = ['hello', 'hello2', 'hello23', 'hello5'];
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
+  Future<http.Response> get _refresh =>
+      http.get('https://jsonplaceholder.typicode.com/photos');
 
   @override
   Widget build(BuildContext context) {
@@ -39,25 +39,33 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.display1,
-            ),
-          ],
-        ),
+      body: FutureBuilder(
+        future: _refresh,
+        builder: (context, snapshot) {
+          if (snapshot.data != null) {
+            final response = snapshot.data as http.Response;
+            final List items = json.decode(response.body);
+            return ListView.separated(
+              separatorBuilder: (context, index) => Divider(),
+              itemBuilder: (context, index) => ListTile(
+                    title: Text(
+                      items[index]['title'],
+                    ),
+                    subtitle: Text('Album ID is ${items[index]['albumId']}'),
+                    leading: CircleAvatar(
+                      backgroundImage:
+                          NetworkImage(items[index]['thumbnailUrl']),
+                    ),
+                  ),
+              itemCount: items.length,
+            );
+          } else {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+        },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
